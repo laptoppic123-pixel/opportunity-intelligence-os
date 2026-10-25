@@ -107,6 +107,11 @@ def test_quota_and_atomic_budget_cutoff(store):
 def test_provider_missing_price_credits_and_fallback_skips(store):
     registry = ProviderRegistry(store)
     src = store.list("source_registry", name="exa")[0]
+    src.update(
+        enabled=False,
+        config={k: v for k, v in src["config"].items() if k != "allowance"},
+        estimated_cost=None,
+    )
     assert registry.reason(src) == "disabled"
     src.update(enabled=True, current_terms_checked=True, credentials_present=True)
     assert registry.reason(src) == "unknown request price"

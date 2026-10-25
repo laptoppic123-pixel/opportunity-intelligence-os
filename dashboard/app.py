@@ -496,7 +496,10 @@ elif page == "Source / API Health":
 elif page == "Usage & Budget":
     a, b, c = st.columns(3)
     usage = store.all("provider_usage")
-    a.metric("Actual recorded external cost", f"${sum(u.get('actual_cost') or 0 for u in usage):.4f}")
+    a.metric("Recorded provider usage (USD)", f"${sum(u.get('actual_cost') or 0 for u in usage):.4f}")
+    st.caption(
+        "Usage can consume promotional credits. This total is not a verified card charge or provider balance. Owner-declared allowances have separate finite local holds in Source / API Health."
+    )
     b.metric("Monthly ceiling", f"${store.settings.monthly_limit}")
     c.metric("Internal paid stop", f"${store.settings.paid_stop}")
     st.warning(

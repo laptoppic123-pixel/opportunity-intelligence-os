@@ -260,6 +260,34 @@ class Store:
             return request_id
         with self._mutex, self.engine.begin() as c:
             from sqlalchemy.dialects.sqlite import insert
+            from .allowances import allowance_reason
+
+            persisted = (
+                c.execute(
+                    select(TABLES["source_registry"]).where(
+                        TABLES["source_registry"].c.id == source["id"],
+                        TABLES["source_registry"].c.owner_id == self.owner,
+                    )
+                )
+                .mappings()
+                .one()
+            )
+            if persisted["config"].get("allowance"):
+                if credit_type != persisted["config"].get("credit_type"):
+                    raise PermissionError("Declared allowance credit type mismatch")
+                rows = (
+                    c.execute(
+                        select(TABLES["provider_usage"]).where(
+                            TABLES["provider_usage"].c.source_id == source["id"],
+                            TABLES["provider_usage"].c.owner_id == self.owner,
+                        )
+                    )
+                    .mappings()
+                    .all()
+                )
+                reason = allowance_reason(persisted, estimate, rows)
+                if reason:
+                    raise PermissionError(reason)
 
             b = TABLES["budget_months"]
             c.execute(

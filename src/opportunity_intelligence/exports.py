@@ -41,7 +41,7 @@ def project(store):
                 "value": sum(i.get("analysis_method") == "llm-assisted" for i in ideas),
             },
             {
-                "metric": "External cost USD",
+                "metric": "Provider usage USD (may consume promotional credits)",
                 "value": sum(u.get("actual_cost") or 0 for u in snapshot["provider_usage"]),
             },
         ]

@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import time
 import json
+import os
 from .schema import now
 from .providers import ProviderRegistry
 from .transport import Transport
@@ -78,8 +79,11 @@ def run(store, command="discover", *, live=False):
                     key=lambda s: s.get("priority") or 100,
                 )
                 adapters = SourceAdapters(t)
+                # Leave room for catalog validation and one AI request/fallback in this same bounded job.
+                model_reserve = 2 if os.getenv("FAST_MODEL") and os.getenv("OPENROUTER_API_KEY") else 0
+                research_cap = max(0, store.settings.max_requests - model_reserve)
                 for query in queries:
-                    if time.monotonic() - start > store.settings.max_seconds:
+                    if time.monotonic() - start > store.settings.max_seconds or t.requests >= research_cap:
                         break
                     if query.get("cache_until") and query["cache_until"] > now():
                         continue
@@ -93,11 +97,13 @@ def run(store, command="discover", *, live=False):
                     for source in sources:
                         if registry.reason(source):
                             continue
-                        if (
-                            t.requests >= store.settings.max_requests
-                            or len(collected) >= store.settings.max_documents
-                        ):
+                        if t.requests >= research_cap or len(collected) >= store.settings.max_documents:
                             break
+                        worst_calls = (
+                            4 if source["name"] == "hn_official" else (2 if source["name"] == "rss" else 1)
+                        )
+                        if t.requests + worst_calls > research_cap:
+                            continue
                         try:
                             state = cursors.get(source["name"]) or {}
                             if isinstance(state, str):

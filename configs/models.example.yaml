@@ -1,10 +1,8 @@
-# No invented model IDs or prices. Refresh the authorized provider catalog after activation.
-FAST_MODEL: null
-DEEP_MODEL: null
-CRITIC_MODEL: null
-HAIMAKER_FAST_MODEL: null
-HAIMAKER_DEEP_MODEL: null
-HAIMAKER_CRITIC_MODEL: null
+# Exact free IDs verified against the public catalog; availability and zero pricing are rechecked at runtime.
+FAST_MODEL: google/gemma-4-26b-a4b-it:free
+DEEP_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+CRITIC_MODEL: google/gemma-4-31b-it:free
+FALLBACK_MODEL: nvidia/nemotron-3-super-120b-a12b:free
 catalog_max_age_hours: 24
 max_input_characters: 12000
 max_output_tokens: 1800

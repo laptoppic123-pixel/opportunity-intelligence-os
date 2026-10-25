@@ -38,9 +38,12 @@ class Transport:
             raise PermissionError("Run request/time bound reached")
         # No redirects: API credentials must never be forwarded to another host.
         estimate = source["estimated_cost"] if estimate is None else estimate
-        for attempt in range(3):
+        max_attempts = 1 if model or (source.get("config") or {}).get("allowance") else 3
+        for attempt in range(max_attempts):
             if self.requests >= self.store.settings.max_requests:
                 raise PermissionError("Run request bound reached")
+            if time.monotonic() - self.started >= self.store.settings.max_seconds:
+                raise PermissionError("Run time bound reached")
             request_id = self.registry.reserve(source, estimate=estimate, run_id=self.run_id)
             self.requests += 1
             try:
@@ -66,16 +69,24 @@ class Transport:
                         self.store.update("source_registry", source["id"], {"config": cfg})
                         raise PermissionError("Provider requested backoff; retrieval deferred")
                     if (
-                        attempt < 2
+                        attempt + 1 < max_attempts
                         and time.monotonic() - self.started + 2**attempt < self.store.settings.max_seconds
                     ):
                         time.sleep(2**attempt)
                         continue
                 if response.status_code >= 300:
                     self.store.settle(request_id, 0 if float(estimate) == 0 else None)
-                    raise PermissionError(
-                        f"API unavailable (HTTP {response.status_code}); no scraping fallback"
-                    )
+                    if response.status_code in {401, 402, 403}:
+                        self.store.update(
+                            "source_registry",
+                            source["id"],
+                            {
+                                "failure_count": 3,
+                                "last_error": f"HTTP {response.status_code}: credential/access/credit unavailable; no paid fallback",
+                            },
+                        )
+                        source["failure_count"] = 3
+                    raise PermissionError(f"Provider HTTP {response.status_code}")
                 is_json = "json" in response.headers.get("content-type", "")
                 data = response.json() if is_json else response.text
                 if model:
@@ -95,6 +106,17 @@ class Transport:
                         if reported is not None:
                             actual = float(reported)
                     self.store.settle(request_id, actual)
+                if actual is None and (source.get("config") or {}).get("allowance"):
+                    self.store.update(
+                        "source_registry",
+                        source["id"],
+                        {
+                            "failure_count": 3,
+                            "last_error": "Promotional charge unknown; reservation held for review",
+                        },
+                    )
+                    source["failure_count"] = 3
+                    raise PermissionError("Credit provider stopped: charge unknown")
                 if actual is not None and float(actual) > float(estimate):
                     source["failure_count"] = 3
                     self.store.update(
@@ -110,7 +132,7 @@ class Transport:
                 return data
             except (httpx.HTTPError, ValueError) as exc:
                 self.store.settle(request_id, 0 if float(estimate) == 0 else None)
-                if attempt < 2 and float(estimate) == 0:
+                if attempt + 1 < max_attempts and float(estimate) == 0:
                     time.sleep(2**attempt)
                     continue
                 self.registry.failure(source, type(exc).__name__)

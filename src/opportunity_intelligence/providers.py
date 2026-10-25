@@ -3,6 +3,7 @@ from decimal import Decimal
 import os
 import yaml
 from .schema import now
+from .allowances import allowance_reason, allowance_spec, usage_amount
 
 
 class ProviderRegistry:
@@ -65,8 +66,11 @@ class ProviderRegistry:
         if cfg.get("blocked_until", "") > now():
             return "provider requested backoff"
         cost = source.get("estimated_cost") if estimate is None else estimate
-        if cost is None or Decimal(str(cost)) < 0:
+        if cost is None or not Decimal(str(cost)).is_finite() or Decimal(str(cost)) < 0:
             return "unknown request price"
+        if cfg.get("allowance"):
+            rows = self.store.all("provider_usage", source_id=source["id"])
+            return allowance_reason(source, cost, rows)
         if Decimal(str(cost)) > 0:
             if not self.settings.paid:
                 return "paid access disabled"
@@ -138,6 +142,24 @@ class ProviderRegistry:
                     )
                 },
                 "skip_reason": self.reason(s),
+                "declared_allowance": self.allowance_status(s),
             }
             for s in self.store.all("source_registry")
         ]
+
+    def allowance_status(self, source):
+        if not source.get("config", {}).get("allowance"):
+            return None
+        try:
+            spec = allowance_spec(source)
+            used = usage_amount(source, self.store.all("provider_usage", source_id=source["id"]))
+            return {
+                "basis": "owner_declared_not_provider_verified",
+                "kind": spec["kind"],
+                "limit": float(spec["limit"]),
+                "reserved_consumption": float(used),
+                "remaining_local": float(max(0, Decimal(str(spec["limit"])) - used)),
+                "expires_at": spec["expires_at"],
+            }
+        except (ValueError, KeyError, TypeError):
+            return {"status": "invalid_or_expired"}
