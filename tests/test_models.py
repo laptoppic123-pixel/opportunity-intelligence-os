@@ -78,3 +78,38 @@ def test_no_model_means_rules_only(store):
             raise AssertionError("No model should be called")
 
     assert ModelRouter(Fake()).analyze([], []) == (None, None)
+
+
+def test_free_price_ceiling_and_private_validation_diagnostics(store, monkeypatch):
+    seed_demo(store)
+    source = store.list("source_registry", name="openrouter")[0]
+    store.update(
+        "source_registry",
+        source["id"],
+        {
+            "config": {
+                **source["config"],
+                "catalog_fetched_at": now(),
+                "catalog": [{"id": "fixture:free", "prompt": "0", "completion": "0", "request": "0"}],
+            }
+        },
+    )
+    monkeypatch.setenv("FAST_MODEL", "fixture:free")
+    from opportunity_intelligence.providers import ProviderRegistry
+
+    class FixtureTransport:
+        def __init__(self):
+            self.store = store
+            self.registry = ProviderRegistry(store)
+
+        def request(self, source, *args, **kwargs):
+            assert kwargs["payload"]["provider"]["max_price"] == {
+                "prompt": 0,
+                "completion": 0,
+                "request": 0,
+            }
+            return {"choices": [{"message": {"content": '{"assessments":"PRIVATE_RESPONSE_TEXT"}'}}]}
+
+    assert ModelRouter(FixtureTransport()).analyze([], []) == (None, None)
+    error = store.get("source_registry", source["id"])["last_error"]
+    assert "list_type" in error and "PRIVATE_RESPONSE_TEXT" not in error

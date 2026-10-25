@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import json
 import os
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from .schema import now
 from .safety import source_message, clean
 from .scoring import save_score
@@ -136,6 +136,11 @@ class ModelRouter:
                         "model": model["id"],
                         "max_tokens": 1800,
                         "temperature": 0,
+                        **(
+                            {"provider": {"max_price": {"prompt": 0, "completion": 0, "request": 0}}}
+                            if source["name"] == "openrouter" and not self.store.settings.paid
+                            else {}
+                        ),
                         "response_format": {
                             "type": "json_schema",
                             "json_schema": {
@@ -170,8 +175,19 @@ class ModelRouter:
                     if any(v is not None for v in assessment.scores.values()) and not assessment.claims:
                         raise ValueError("Unsupported scores")
                 return parsed, identity
-            except (PermissionError, RuntimeError, ValueError, KeyError, IndexError):
-                self.t.registry.failure(source, "model response rejected or unavailable")
+            except (PermissionError, RuntimeError, ValueError, KeyError, IndexError) as exc:
+                # Keep diagnostics useful without saving response text, source text or credentials.
+                detail = type(exc).__name__
+                if isinstance(exc, ValidationError):
+                    detail = ",".join(
+                        sorted(
+                            {
+                                error["type"]
+                                for error in exc.errors(include_input=False, include_context=False)
+                            }
+                        )
+                    )
+                self.t.registry.failure(source, "model response rejected or unavailable: " + detail)
                 continue
         return None, None
 
