@@ -4,6 +4,7 @@ import os
 import yaml
 from .schema import now
 from .allowances import allowance_reason, allowance_spec, usage_amount
+from .ai_reliability import provider_pause, upgrade_legacy
 
 
 class ProviderRegistry:
@@ -23,9 +24,12 @@ class ProviderRegistry:
                 **{
                     k: v
                     for k, v in (prior.get("config") or {}).items()
-                    if k in {"catalog", "catalog_fetched_at", "blocked_until"}
+                    if k in {"catalog", "catalog_fetched_at", "blocked_until", "ai_reliability"}
                 },
             }
+            failures = (
+                upgrade_legacy(prior, config) if name == "openrouter" else prior.get("failure_count", 0)
+            )
             self.store.upsert(
                 "source_registry",
                 {
@@ -39,7 +43,7 @@ class ProviderRegistry:
                     "daily_quota": spec.get("daily_quota"),
                     "monthly_quota": spec.get("monthly_quota"),
                     "reset_date": spec.get("reset_date"),
-                    "failure_count": prior.get("failure_count", 0),
+                    "failure_count": failures,
                     "last_success": prior.get("last_success"),
                     "last_error": prior.get("last_error"),
                     "added_information_value": prior.get("added_information_value", 0),
@@ -61,6 +65,8 @@ class ProviderRegistry:
             return "current access terms need review"
         if not source.get("credentials_present") and not cfg.get("optional_key"):
             return "missing credential"
+        if source["name"] == "openrouter" and provider_pause(source):
+            return provider_pause(source)
         if source.get("failure_count", 0) >= 3:
             return "circuit breaker open; owner review/reset required"
         if cfg.get("blocked_until", "") > now():

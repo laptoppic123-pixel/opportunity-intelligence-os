@@ -49,3 +49,14 @@ Physical products remain an optional separate track with unknown economics until
 - `uv run oi --demo export`: independent synthetic records only; never production validation.
 
 If a live operation fails, stop schedules, inspect source health and redacted alerts, preserve checkpoints, and rerun only the affected bounded operation after fixing the cause. No recovery path purchases credits, changes accounts, weakens TLS/RLS or resets trials.
+
+
+## OpenRouter reliability and deferred analysis
+
+Preferred role models remain first. The official `openrouter/free` router is an automatic fallback for model-specific unavailability; the previously configured fallback is retained when applicable. A fresh catalog must show zero prices for the free router. Requests keep the zero provider-price ceiling; the returned underlying model must also match a zero-priced catalog entry. Independent criticism cannot reuse that underlying generating model. Local parsing and canonical evidence validation run before any AI label is written. An incomplete response is deferred, even if the HTTP status is 200.
+
+Retry-After is persisted for both seconds and HTTP-date values and blocks OpenRouter-wide fallback until it expires. Account-wide daily free exhaustion suspends all OpenRouter models until the provider reset or the next UTC day, whichever is later. Other account-wide limits pause the provider; model-specific upstream failures pause the affected route. No balance APIs or key rotation are used to bypass these limits. There are no same-model retry loops. Transient circuits expire automatically; credential/access or cost anomalies still require review.
+
+Unfinished work is saved idempotently in the existing `research_queue` with kinds `ai_fast`, `ai_deep` or `ai_critic`. The opportunity and original evidence remain intact, and failed AI never becomes an AI-validated or customer-validated result. Normal research searches exclude these AI tasks. The next **authorized** discover/analyze/deep-dive worker resumes at most one due AI job, within the same request/time/lease limits. Pending tasks survive interruption, and the same task is not retried again in that worker. Automatic schedules remain OFF; this queue creates no timer or background process. Once schedules are explicitly approved, existing scheduled worker commands will use the same resumption path.
+
+The focused live router check returned HTTP 200 at zero reported cost, but its response reached the output token limit. It was rejected and queued; the previous assessment remained unchanged. Status: **RESEARCH READY / AI DEGRADED**. No migrations or prior integration suite were repeated. See the dated reliability report for the detailed test evidence.

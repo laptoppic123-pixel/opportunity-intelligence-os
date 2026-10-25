@@ -9,6 +9,7 @@ from .sources import SourceAdapters
 from .planner import plan
 from .intelligence import ingest, rules_analysis, enrich, challenge
 from .models import ModelRouter
+from .ai_queue import enqueue as enqueue_ai, resume as resume_ai, AI_KINDS
 
 
 def retain(store):
@@ -53,12 +54,19 @@ def run(store, command="discover", *, live=False):
         collected = []
         start = time.monotonic()
         try:
+            resumed, attempted_ai = (0, set())
+            if live and command in {"discover", "analyze", "deep-dive"}:
+                resumed, attempted_ai = resume_ai(t, limit=1)
+                if resumed:
+                    diagnostics.append({"resumed_ai_assessments": resumed})
             if command in {"discover", "deep-dive"} and not store.settings.demo:
                 tasks = sorted(
                     [
                         q
                         for q in store.all("research_queue")
-                        if q["status"] == "pending" and (not q.get("due_at") or q["due_at"] <= now())
+                        if q["status"] == "pending"
+                        and q.get("kind") not in AI_KINDS
+                        and (not q.get("due_at") or q["due_at"] <= now())
                     ],
                     key=lambda q: -(q.get("priority") or 0),
                 )
@@ -80,7 +88,14 @@ def run(store, command="discover", *, live=False):
                 )
                 adapters = SourceAdapters(t)
                 # Leave room for catalog validation and one AI request/fallback in this same bounded job.
-                model_reserve = 2 if os.getenv("FAST_MODEL") and os.getenv("OPENROUTER_API_KEY") else 0
+                available_ai = any(
+                    not registry.reason(s, estimate=0)
+                    for s in store.all("source_registry")
+                    if s.get("config", {}).get("kind") == "model"
+                )
+                model_reserve = (
+                    2 if available_ai and os.getenv("FAST_MODEL") and os.getenv("OPENROUTER_API_KEY") else 0
+                )
                 research_cap = max(0, store.settings.max_requests - model_reserve)
                 for query in queries:
                     if time.monotonic() - start > store.settings.max_seconds or t.requests >= research_cap:
@@ -197,13 +212,15 @@ def run(store, command="discover", *, live=False):
                 changed = rules_analysis(store, collected if command == "discover" else None, execution["id"])
                 if live and changed:
                     router = ModelRouter(t)
+                    changed = [i for i in changed if i["id"] not in attempted_ai]
                     observations = collected or store.list("raw_observations", limit=12)
-                    batch, identity = router.analyze(
-                        changed[:4], observations, role="deep" if command == "deep-dive" else "fast"
-                    )
+                    role = "deep" if command == "deep-dive" else "fast"
+                    batch, identity = router.analyze(changed[:4], observations, role=role)
                     if batch:
                         router.apply(batch, identity)
+                        enqueue_ai(store, changed[4:], role=role, run_id=execution["id"])
                     else:
+                        enqueue_ai(store, changed, role=role, run_id=execution["id"])
                         diagnostics.append(
                             {"analysis": "rules-only; no authorized configured model succeeded"}
                         )
@@ -225,6 +242,8 @@ def run(store, command="discover", *, live=False):
                     )
                     if result and identity not in original:
                         router.apply(result, identity, critique=True)
+                    elif candidates:
+                        enqueue_ai(store, candidates, role="critic", run_id=execution["id"])
             retain(store)
             store.update(
                 "research_runs",
