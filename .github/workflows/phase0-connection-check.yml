@@ -1,0 +1,72 @@
+name: Phase 0 Supabase connectivity
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: phase0-supabase-connectivity
+  cancel-in-progress: false
+
+jobs:
+  connectivity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - name: Check dedicated Supabase API without writing data
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import ssl
+          import sys
+          import urllib.error
+          import urllib.request
+
+          expected = "https://vaxesikpcgrdxzqikyur.supabase.co"
+          url = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
+          key = os.environ.get("SUPABASE_PUBLISHABLE_KEY", "").strip()
+          if url != expected:
+              sys.exit("SUPABASE_URL is missing or does not match the dedicated project.")
+          if not key.startswith("sb_publishable_"):
+              sys.exit("SUPABASE_PUBLISHABLE_KEY must be the dedicated project's modern publishable key.")
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+
+          context = ssl.create_default_context()
+          context.minimum_version = ssl.TLSVersion.TLSv1_2
+          opener = urllib.request.build_opener(
+              urllib.request.HTTPSHandler(context=context), NoRedirect()
+          )
+          for path in ("/auth/v1/health", "/rest/v1/"):
+              request = urllib.request.Request(
+                  url + path, headers={"apikey": key, "Accept": "application/json"}
+              )
+              try:
+                  with opener.open(request, timeout=20) as response:
+                      if response.status != 200:
+                          sys.exit("Supabase connectivity check returned an unexpected status.")
+                      body = response.read(1024 * 1024 + 1)
+                      if len(body) > 1024 * 1024:
+                          sys.exit("Supabase response exceeded the expected size.")
+                      payload = json.loads(body)
+                      if not isinstance(payload, dict):
+                          sys.exit("Supabase response was not the expected JSON object.")
+                      if path == "/auth/v1/health" and payload.get("name") != "GoTrue":
+                          sys.exit("Auth service response was not recognized.")
+                      if path == "/rest/v1/" and not ("swagger" in payload or "openapi" in payload):
+                          sys.exit("REST service response was not recognized.")
+              except urllib.error.HTTPError as error:
+                  sys.exit("Supabase check failed with HTTP " + str(error.code) + ".")
+              except (urllib.error.URLError, TimeoutError, ValueError, OSError):
+                  sys.exit("Supabase check failed; verify project status and repository secrets.")
+              print("PASS: " + path)
+          print("Connection verified. No application data was read or written.")
+          PY
