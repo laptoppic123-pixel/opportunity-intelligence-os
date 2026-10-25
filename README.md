@@ -2,6 +2,8 @@
 
 Phase 0 connection preparation only. The agent, data pipeline, dashboard, and schedules have not been built.
 
+The selected n8n execution model is now configured: [GitHub Actions batch jobs](docs/n8n-batch.md) start a temporary n8n CLI container, run a task, and stop. The runtime check is available manually; the approved agent-workflow list is empty until the next phase. Cloud execution has not been tested or dispatched because the included allowance still needs verification.
+
 ## Platform destinations
 
 | Platform | Destination | Verified status |

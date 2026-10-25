@@ -1,0 +1,56 @@
+name: n8n batch runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Check the n8n runtime, or execute a reviewed workflow
+        type: choice
+        options:
+          - runtime-check
+          - execute
+        default: runtime-check
+        required: true
+      workflow:
+        description: Approved workflow name; leave empty for runtime-check
+        type: string
+        default: ''
+        required: false
+      included_allowance_confirmed:
+        description: I checked GitHub Billing and have sufficient included runner minutes
+        type: boolean
+        default: false
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opportunity-n8n-batch
+  cancel-in-progress: false
+
+jobs:
+  batch:
+    if: ${{ inputs.included_allowance_confirmed && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      BATCH_MODE: ${{ inputs.mode }}
+      BATCH_WORKFLOW: ${{ inputs.workflow }}
+      BATCH_ALLOWANCE_CONFIRMED: ${{ inputs.included_allowance_confirmed }}
+    steps:
+      - name: Check out reviewed repository files
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; resolved 2026-10-25
+        with:
+          persist-credentials: false
+      - name: Start n8n, run the selected task, then stop
+        shell: bash
+        run: python3 scripts/n8n_batch.py "$BATCH_MODE" --workflow "$BATCH_WORKFLOW"
+      - name: Record job result
+        if: always()
+        shell: bash
+        env:
+          BATCH_STATUS: ${{ job.status }}
+        run: |
+          printf 'n8n batch job result: %s\n' "$BATCH_STATUS" >> "$GITHUB_STEP_SUMMARY"
+          printf 'No persistent n8n server or MCP endpoint is hosted by this job.\n' >> "$GITHUB_STEP_SUMMARY"

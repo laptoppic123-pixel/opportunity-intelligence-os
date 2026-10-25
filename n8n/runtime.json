@@ -1,0 +1,6 @@
+{
+  "version": "2.44.6",
+  "image": "docker.n8n.io/n8nio/n8n:2.44.6@sha256:845ac21710739d7206086974295f7f93932e0fa8dd87af6d9fb0b7aa0338ad15",
+  "platform": "linux/amd64",
+  "timezone": "Asia/Karachi"
+}
