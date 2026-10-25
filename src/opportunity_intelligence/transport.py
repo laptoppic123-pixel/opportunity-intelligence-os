@@ -55,7 +55,7 @@ class Transport:
                 options = {}
                 if source["name"] == "openrouter":
                     left = self.store.settings.max_seconds - (time.monotonic() - self.started)
-                    options["timeout"] = max(0.1, min(40, left))
+                    options["timeout"] = max(0.1, min(60, left))
                 response = self.client.request(
                     method, url, params=params, json=payload, headers=headers, **options
                 )

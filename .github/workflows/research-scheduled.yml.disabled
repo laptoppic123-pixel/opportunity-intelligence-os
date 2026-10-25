@@ -3,7 +3,6 @@ name: Opportunity OS opt-in schedules
   schedule:
   - cron: 17 1,7,13,19 * * *
   - cron: 41 3 * * *
-  - cron: 29 5 * * 2,5
   - cron: 53 4 * * 0
 permissions:
   contents: read
@@ -12,13 +11,14 @@ concurrency:
   cancel-in-progress: false
 jobs:
   research:
-    if: ${{ vars.OI_SCHEDULES_ENABLED == 'true' && vars.OI_ACTIVATED == 'true' && vars.OI_LIVE_ENABLED == 'true' }}
+    if: ${{ vars.OI_SCHEDULES_ENABLED == 'true' && vars.OI_ACTIVATED == 'true' && vars.OI_LIVE_ENABLED == 'true'
+      }}
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     env:
       OI_ACTIVATED: ${{ vars.OI_ACTIVATED || 'false' }}
       OI_LIVE_ENABLED: ${{ vars.OI_LIVE_ENABLED || 'false' }}
-      OI_PAID_ENABLED: ${{ vars.OI_PAID_ENABLED || 'false' }}
+      OI_PAID_ENABLED: 'false'
       OI_MONTHLY_LIMIT_USD: ${{ vars.OI_MONTHLY_LIMIT_USD || '20' }}
       OI_INTERNAL_PAID_STOP_USD: ${{ vars.OI_INTERNAL_PAID_STOP_USD || '19' }}
       OI_OWNER_ID: ${{ vars.OI_OWNER_ID }}
@@ -44,6 +44,7 @@ jobs:
       OI_BACKUP_ENCRYPTION_KEY: ${{ secrets.OI_BACKUP_ENCRYPTION_KEY }}
       OI_MAX_REQUESTS: '10'
       OI_MAX_SECONDS: '180'
+      OI_MAX_DOCUMENTS: '30'
     steps:
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       with:
@@ -55,6 +56,6 @@ jobs:
     - name: Select bounded scheduled task
       env:
         SCHEDULE: ${{ github.event.schedule }}
-      run: "case \"$SCHEDULE\" in\n  '41 3 * * *') uv run --no-sync oi --live analyze ;;\n  '29 5 * * 2,5') uv run --no-sync\
-        \ oi --live deep-dive ;;\n  '53 4 * * 0') uv run --no-sync oi --live report && uv run --no-sync oi --live backup --upload\
-        \ ;;\n  *) uv run --no-sync oi --live discover ;;\nesac"
+      run: "case \"$SCHEDULE\" in\n  '17 1,7,13,19 * * *') uv run --no-sync oi --live discover ;;\n  '41 3 * * *')\
+        \ uv run --no-sync oi --live analyze ;;\n  '53 4 * * 0') uv run --no-sync oi --live report && uv run --no-sync\
+        \ oi --live backup --upload ;;\n  *) echo \"Unknown schedule; no task started\"; exit 1 ;;\nesac\n"

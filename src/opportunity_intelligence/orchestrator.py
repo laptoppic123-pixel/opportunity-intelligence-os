@@ -215,10 +215,10 @@ def run(store, command="discover", *, live=False):
                     changed = [i for i in changed if i["id"] not in attempted_ai]
                     observations = collected or store.list("raw_observations", limit=12)
                     role = "deep" if command == "deep-dive" else "fast"
-                    batch, identity = router.analyze(changed[:4], observations, role=role)
+                    batch, identity = router.analyze(changed[:1], observations, role=role)
                     if batch:
                         router.apply(batch, identity)
-                        enqueue_ai(store, changed[4:], role=role, run_id=execution["id"])
+                        enqueue_ai(store, changed[1:], role=role, run_id=execution["id"])
                     else:
                         enqueue_ai(store, changed, role=role, run_id=execution["id"])
                         diagnostics.append(
@@ -231,7 +231,7 @@ def run(store, command="discover", *, live=False):
                 if live:
                     candidates = [
                         i for i in store.all("opportunities") if i.get("favorite") or i.get("pinned")
-                    ][:4]
+                    ][:1]
                     original = {i.get("model_version") for i in candidates if i.get("model_version")}
                     router = ModelRouter(t)
                     result, identity = router.analyze(

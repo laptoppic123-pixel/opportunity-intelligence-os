@@ -203,7 +203,7 @@ def test_json_mode_and_prompt_only_models_use_catalog_capabilities(store, monkey
             def request(self, source, *args, **kwargs):
                 payload = kwargs["payload"]
                 assert (payload.get("response_format") == {"type": "json_object"}) == bool(params)
-                assert "JSON structure" in payload["messages"][0]["content"]
+                assert "Output JSON" in payload["messages"][0]["content"]
                 return {"choices": [{"message": {"content": '{"assessments":[]}'}}]}
 
         assert ModelRouter(Fixture()).analyze(

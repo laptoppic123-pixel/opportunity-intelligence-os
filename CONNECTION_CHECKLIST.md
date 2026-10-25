@@ -17,3 +17,6 @@ Never paste secrets in chat. Keep the live/paid/scheduler flags OFF while adding
 7. **Final activation remains explicit.** Migrations `001_schema.sql`, `002_atomic_controls.sql`, `003_consistent_snapshot.sql` and `004_declared_allowances.sql` have already been applied only to project `vaxesikpcgrdxzqikyur`. Do not reapply them or repeat the completed core suite. See the latest connection report for the actual bounded model-test outcome. Global `OI_ACTIVATED`, `OI_LIVE_ENABLED`, `OI_PAID_ENABLED`, `OI_SCHEDULES_ENABLED` remain false. The scheduler template remains `.disabled`. Never enable schedules without the owner's final approval.
 
 Missing credentials or unavailable providers are skipped; rules-based results are preserved and clearly labeled. Supabase remains canonical. No private key belongs in this checklist, a report, or Git.
+
+
+Final handoff (2026-10-25): core research and all storage/dashboard/export connections are ready. The AI request is now compact and bounded to one opportunity; live free AI remains best effort after a rate-limited final check. An AI outage defers analysis and does not block scheduled source collection. No additional development or full integration-test round is a prerequisite to research activation. The owner must still explicitly approve enabling the inert schedule and activation variables. Paid mode remains off.

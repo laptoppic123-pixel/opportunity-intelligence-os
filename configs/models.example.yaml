@@ -5,6 +5,8 @@ CRITIC_MODEL: google/gemma-4-31b-it:free
 FALLBACK_MODEL: nvidia/nemotron-3-super-120b-a12b:free
 catalog_max_age_hours: 24
 max_input_characters: 12000
-max_output_tokens: 1800
+max_output_tokens: 3072
 free_only: true
 automatic_free_router: openrouter/free
+max_opportunities_per_request: 1
+max_observations_per_request: 3
