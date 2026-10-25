@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "opportunity-intelligence-os"
+version = "2.0.0"
+description = "Evidence-grounded opportunity research with an offline-first owner dashboard"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "streamlit==1.50.0", "SQLAlchemy==2.0.44", "httpx==0.28.1",
+  "pydantic==2.12.3", "python-dotenv==1.1.1", "PyYAML==6.0.3",
+  "feedparser==6.0.12", "cryptography==46.0.3"
+]
+
+[project.optional-dependencies]
+dev = ["pytest==8.4.2", "ruff==0.14.2"]
+
+[project.scripts]
+oi = "opportunity_intelligence.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/opportunity_intelligence"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E9", "F63", "F7", "F82"]

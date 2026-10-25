@@ -1,42 +1,77 @@
-# Opportunity Intelligence OS
+# Opportunity Intelligence OS · V2.0
 
-Phase 0 connection preparation only. The agent, data pipeline, dashboard, and schedules have not been built.
+Evidence-grounded discovery of unmet business needs, niche software opportunities, automation services and digital products. **BUILD is ready for credentials. Live research, paid APIs and schedules are OFF.** This is not a promise of demand, validation or profit.
 
-The selected n8n execution model is configured and its cloud runtime check has passed: [GitHub Actions batch jobs](docs/n8n-batch.md) start a temporary n8n CLI container, run a task, and stop. The approved agent-workflow list is empty until the next phase. After the account owner confirmed available included minutes, one runtime-check job succeeded in about 65 seconds: https://github.com/laptoppic123-pixel/opportunity-intelligence-os/actions/runs/40189280773. No business workflow or database integration ran.
+## Start the offline application (Windows PowerShell)
 
-## Platform destinations
+```powershell
+git clone https://github.com/laptoppic123-pixel/opportunity-intelligence-os.git
+cd opportunity-intelligence-os
+py -m pip install uv==0.9.8
+uv sync --locked --extra dev
+uv run oi doctor
+uv run oi demo
+$env:OI_DEMO_MODE = 'true'
+uv run streamlit run dashboard/app.py --server.address 127.0.0.1
+```
 
-| Platform | Destination | Verified status |
-| --- | --- | --- |
-| GitHub | `laptoppic123-pixel/opportunity-intelligence-os` (private) | Created; authenticated CLI has admin and write access |
-| GitHub Actions | Enabled; default workflow token is read-only | One n8n runtime check passed after the owner confirmed included capacity |
-| Supabase organization | `Ai agent` (`jmdhivmkjvukuvduojeg`) | Free plan; MCP access verified |
-| Supabase project | `opportunity-intelligence-os` (`vaxesikpcgrdxzqikyur`) | Created; ACTIVE_HEALTHY; read-only SQL passed |
-| Supabase region | `ap-south-1` | Verified |
-| Streamlit | Local dashboard | Future phase; no account needed |
+Open http://127.0.0.1:8501. The six fixtures are visibly **DEMO / SYNTHETIC DATA**, including fictional `example.com` evidence links. No live sources or models run in demo mode. Local SQLite is used only for this explicit demo/test mode; the production worker has no SQLite fallback.
 
-Project dashboard: https://supabase.com/dashboard/project/vaxesikpcgrdxzqikyur
+```powershell
+uv run oi --demo analyze
+uv run oi --demo export --output .local/demo-exports
+uv run pytest
+uv run ruff check src dashboard scripts tests
+```
 
-The project was created under the approved Ai agent connection after a quote of $0/month. Its public schema is empty. No existing project or n8n workflow was changed.
+The export contains 12 genuine Excel sheets, one CSV per view, and a Markdown research summary from one database snapshot. Excel is an export, not another datastore.
 
-## Connection setup remaining
+## What is implemented
 
-1. Check the account's remaining included runner allowance and spending controls before future runs. The owner confirmed available included minutes for the first successful runtime check. The billing endpoint requires the additional `user` OAuth scope, which was not requested, so the exact account balance is not available to Codex.
-2. Add the Phase 0 repository secrets listed in `docs/secrets.md` directly in GitHub's secret settings. The Supabase publishable-key lookup did not return during preparation; no credential values were retrieved or installed.
-3. Dispatch the connection check only after the included allowance is verified. Record its result before calling GitHub-to-Supabase connectivity verified.
+- Python 3.12 batch worker: query planning, source rotation, checkpointed ingestion, exact/near-copy deduplication, candidate problem clustering, nullable assessed scoring, rules-only reasoning, optional grounded LLM batches, skeptical research queue, spending and competitor-price extraction.
+- Keyless-first HN Algolia, official HN, public GitHub Issues and Stack Exchange adapters; reviewed RSS/vendor changelogs; optional Exa, Tavily, Serper, YouTube metadata, OpenAlex and a field-mapped procurement JSON adapter. Restricted Reddit/G2 access stays OFF.
+- Provider registry with capabilities, missing-key skips, terms flags, quotas, yield, circuit breakers and cost reservations. OpenRouter is the initial optional model gateway; a configurable OpenAI-compatible Haimaker fallback is implemented without inventing its endpoint or model catalog.
+- 21 owner-scoped relational tables, PostgreSQL security migrations, atomic leases, quota/budget RPCs and consistent snapshot export. Supabase is the only production source of truth.
+- Ten working local Streamlit pages, manual hypotheses/import, favorites, notes, validation experiments, queue controls, source health and usage, evidence links, side-by-side comparison and exports.
+- Private encrypted versioned backups and gated restore, retention of low-value excerpts, manual worker Actions, and an inactive schedule template.
 
-Repository: https://github.com/laptoppic123-pixel/opportunity-intelligence-os
+## Production connection (later)
 
-The account owner authorized GitHub CLI with `repo` and `workflow` scopes. Authenticated API checks verify repository administration and read/write access. Actions is enabled; default workflow token permissions are read-only and workflow approval of pull requests is disabled. The supplied check is manual only; uploading it does not trigger execution.
+Follow [CONNECTION_CHECKLIST.md](CONNECTION_CHECKLIST.md), then explicitly authorize phase 3. The already-created dedicated project is `vaxesikpcgrdxzqikyur` in the **Ai agent** organization. Do not connect any DMS or existing n8n database.
 
-The GitHub connector separately authenticates the correct identity but exposes no app installations. GitHub CLI is the verified working repository connection; an additional connector installation is optional if future work specifically needs connector-based repository access.
+Production uses the Supabase REST API from trusted Python processes. `SUPABASE_SECRET_KEY` is server-only. Tables deny access to `anon` and `authenticated`; the local owner dashboard accesses them through its Python server. `OI_OWNER_ID` is a stable generated UUID namespace, not an email or an assumed Supabase Auth user. URL protection defaults to the dedicated project reference.
 
-The GitHub Free plan includes 2,000 standard runner minutes per month shared across the account's private repositories; this is an entitlement, not a verified remaining balance. Source: https://docs.github.com/en/billing/concepts/product-billing/github-actions
+To return from a demo PowerShell session before production: `Remove-Item Env:OI_DEMO_MODE`; configure `.env` without committing it. Live access requires **both** `OI_ACTIVATED=true` and `OI_LIVE_ENABLED=true`, plus an explicit CLI `--live` for worker execution. Paid mode has a separate flag and stays OFF.
 
-## n8n observation
+## Commands
 
-The local MCP entry points to `http://localhost:5678/mcp-server/http`, but that address and `/healthz` both refused connections during preparation. No n8n tools were available in this chat. A duplicate `n8n-2` configuration appears to contain an entire `codex mcp add` command instead of an executable definition. It was not changed. The Supabase account used by existing n8n workflows remains unverified.
+| Command | Purpose |
+| --- | --- |
+| `oi doctor` | Missing-key-safe, offline configuration report; never echoes secrets |
+| `oi demo` | Explicitly create/reuse synthetic SQLite fixtures |
+| `oi --demo analyze` | Exercise the real rules pipeline offline |
+| `oi --demo export --output PATH` | Snapshot-consistent XLSX/CSV/Markdown |
+| `oi --live discover` | Bounded, checkpointed public-source collection after activation |
+| `oi --live analyze` | Rules-only analysis; optional configured model batch |
+| `oi --live enrich` | Extract cited spend/price references from observed evidence |
+| `oi --live challenge` | Queue skeptical research; optional independent critic |
+| `oi --live deep-dive` | Bounded discovery, deeper analysis and enrichment |
+| `oi --live models --refresh` | Fetch permitted model IDs/prices after authorization; presets are empty |
+| `oi --live report` | Generate current canonical reports |
+| `oi --live backup --upload` | Encrypted backup into a verified private Storage bucket |
+| `oi restore PATH` | Integrity/owner check, dry-run by default |
+| `oi --live restore PATH --apply --confirm-owner UUID` | Explicit, idempotent owner-scoped restore |
 
-## Boundaries
+## Execution and cost controls
 
-No application tables, migrations, AI agent, paid features, recurring triggers, or dashboard were created. All existing DMS, n8n, and other Supabase resources were left untouched. GitHub stores code and runs bounded automation jobs; it is not a persistent n8n server or Streamlit hosting service.
+GitHub Actions is a batch executor, not an always-online n8n server. V2 supersedes the earlier n8n runtime experiment; its manual workflow definitions are archived under `docs/legacy/` and are not application dependencies. No original laptop workflow is migrated.
+
+All active workflows are manual only. `.github/workflows/research-scheduled.yml.disabled` is ignored by GitHub. It defines four daily discovery runs at off-hour UTC minutes, daily analysis, twice-weekly deep dives, and weekly reports/backups. It can be activated only after phase-3 checks; it also requires three opt-in repository variables. GitHub concurrency and a database lease prevent overlap. Cursors are tracked per query/source, failed sources do not advance, and the initial catch-up window is bounded to seven days.
+
+External paid requests default to $0. The configurable monthly ceiling is $20 and the internal paid stop is $19; unknown prices/credits are refused. Internal estimates cannot guarantee vendor billing. Configure vendor-side caps and GitHub spending limits. Read [RUNBOOK.md](RUNBOOK.md).
+
+## Validation boundary
+
+BUILD checks are offline unit tests, fixture-based UI checks, SQL inspection and export structure/consistency checks. Live research endpoints, models, PostgreSQL migrations, production RLS, cloud business jobs and real database-to-dashboard-to-XLSX consistency are deliberately **not claimed verified**. They belong to phase 3 after credentials and explicit activation.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md), [RUNBOOK.md](RUNBOOK.md) and the checked-in V2 specification in `docs/specification/`.

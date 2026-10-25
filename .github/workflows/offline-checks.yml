@@ -1,0 +1,24 @@
+name: Opportunity OS offline checks
+'on':
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      OI_LIVE_ENABLED: 'false'
+      OI_PAID_ENABLED: 'false'
+      OI_ACTIVATED: 'false'
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - run: 'python3 -m pip install uv==0.9.8 --disable-pip-version-check
+
+        uv sync --locked --extra dev
+
+        uv run --no-sync pytest
+
+        uv run --no-sync ruff check src dashboard scripts tests'

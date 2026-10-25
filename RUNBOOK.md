@@ -1,0 +1,51 @@
+# Operator runbook
+
+## Build state and activation boundary
+
+Live access, paid APIs and scheduled research remain disabled. Basic offline checks may be repeated locally; do not dispatch cloud jobs merely to repeat them. No application production migrations or live source/model calls were made during BUILD. The earlier 65-second n8n runtime proof is not a Python research integration test.
+
+After credentials and explicit authorization: apply the three reviewed migrations to the dedicated Supabase project; check tables, grants, RLS and RPCs; enable live/activation for one bounded test with paid mode OFF; run `oi --live doctor`, one capped discovery, optional free-model analysis, real DB-to-dashboard-to-Excel reconciliation and budget/failover tests. Report actual counts/costs and missing optional capabilities. Only then activate the schedule template.
+
+## Scheduled operation (opt-in)
+
+`research-scheduled.yml.disabled` is inert. After successful phase-3 checks run `uv run python scripts/activate_schedules.py --confirm-activation` locally, review/push the resulting `.yml`, then set `OI_SCHEDULES_ENABLED=true` in repository Variables. It also requires `OI_ACTIVATED` and `OI_LIVE_ENABLED`. The UTC definitions are discovery 01:17/07:17/13:17/19:17; analysis daily 03:41; deep dives Tuesday/Friday 05:29; weekly report/private backup Sunday 04:53. Actions may delay or miss cron events: the next authorized run uses persisted source-specific cursors and due research tasks. Do not create a second scheduled workflow to compensate.
+
+All worker jobs share `opportunity-os-global-worker` concurrency and a database lease. Jobs time out after 12 minutes; source loops cap at 10 requests, 30 observations and 180 seconds by default. Leases expire after 900 seconds if a process is terminated. A killed queue task marked running can be returned to pending in the dashboard after the lease expires. Outputs/checkpoints remain in Supabase; completed jobs need no laptop.
+
+Disable schedules by setting `OI_SCHEDULES_ENABLED=false` and removing/renaming the active scheduler file. Disable all live access with `OI_LIVE_ENABLED=false`; paid mode remains independently OFF. Do not change unrelated projects.
+
+## Source health, retries and quota handling
+
+Check Source/API Health and System notices. A provider with no key, unreviewed terms, unknown price, exhausted quota, required backoff or three consecutive failures is skipped. HTTP 429/502/503/504 have bounded backoff; explicit retry-after is persisted. Stack Exchange backoff is honored. No scraping, new-account rotation, alternative identity or trial-reset workaround is implemented. Review the actual issue before resetting a circuit. `configs/sources.yaml` owns enablement; adding a key does not enable an optional provider.
+
+No responding source means an explicit diagnostic and zero live discoveries, never replacement synthetic results. Cursors advance only for sources that succeeded. The query cache, source identity and replay hashes protect against duplicate work. A source excerpt's `root_cause` or time cost is populated only when explicitly extractable; query-target buyer labels are not confirmed buyer identities.
+
+## Models, credits and budgets
+
+After authorized catalog refresh, select actual role IDs and record current prices; catalogs expire after 24 hours. Leave unneeded roles blank. Unsupported schemas, invalid source IDs/quotes and failed providers fall back to another configured authorized provider, otherwise rules-only. Independent critique must use a different model/provider identity. Refreshing catalogs is itself a bounded authorized network action.
+
+Never infer a trial balance or renewability from a key. Nonzero-priced requests require explicit paid authorization, current reviewed price, nonnegative verified credit headroom checked within 24 hours, quotas and the aggregate budget. Paid access stays OFF until separately approved. The internal cap is the lesser of monthly limit and paid stop; unknown charges keep reservations held. Actual usage above an estimate raises an alert and reduces remaining headroom; estimates cannot guarantee vendor charges. Review vendor-side caps, auto-top-up OFF, key limits and billing alerts. At [GitHub Billing](https://github.com/settings/billing/usage) review remaining included capacity and configure [budgets](https://github.com/settings/billing/budgets) to stop overage. No automatic overage or top-up configuration is performed by this app.
+
+## Retention, backup and restore
+
+Retention clears stale low-value excerpts and copied quotes after `OI_RETENTION_DAYS` (90 by default), retaining source URLs, hashes and provenance. Favorite/pinned evidence is protected. Review these exceptions against the 500 MB free-database budget and archive/export owner favorites when necessary. Snapshots refuse more than 50,000 rows per table instead of silently truncating.
+
+Backups are timestamp/versioned encrypted objects in **private** `oi-private-backups` Storage. Generate and securely preserve `OI_BACKUP_ENCRYPTION_KEY` separately. `oi --live backup --upload` creates/verifies the bucket after activation. No public download links are produced. The weekly backup job is disabled until scheduler activation. Keep a bounded backup history: review monthly, retain the most recent eight weekly backups and any intentional restore point; delete older encrypted objects via the owner dashboard/Storage console after verifying a recent restore. No destructive Storage cleanup runs automatically during BUILD.
+
+To restore, download an encrypted object privately. Run `oi restore PATH` with the same owner and encryption key; inspect schema version, checksum and counts. Restore to an empty/reviewed dedicated recovery project first, explicitly updating `OI_EXPECTED_PROJECT_REF` and URL; never a DMS database. Authorize `oi --live restore PATH --apply --confirm-owner UUID`. Upserts are idempotent and do not wipe existing tables. Check foreign keys, counts, source links and exports. Key loss makes encrypted backups unrecoverable.
+
+## Security and limitations
+
+Run Streamlit only at 127.0.0.1. Do not deploy it publicly or share service keys. `.env`, local demo data and exports are ignored. Never copy production credentials into fixture files, source text or download buttons. Logs expose health/status and redacted errors rather than response bodies. A local dashboard with a service key is for the trusted owner, not untrusted users. Exa/Tavily do not replace source access permissions. Regulatory/financial information is a research signal, not professional advice.
+
+Physical products remain an optional separate track with unknown economics until fulfillment/shipping/returns are assessed; unsafe/illegal/age-restricted sectors are excluded. Public commentary does not constitute direct buyer validation. A genuine interview, commitment or pilot must be recorded as owner feedback. No outreach is sent automatically.
+
+## Useful diagnosis
+
+- `uv run oi doctor`: offline presence/flags only; never echoes secrets.
+- `uv run oi --live doctor`: authorized Supabase table/RPC connection test after migrations.
+- `uv run pytest`: focused offline checks; HTTP transport is blocked in the test fixture.
+- `uv run ruff check src dashboard scripts tests`: syntax/error checks.
+- `uv run oi --demo export`: independent synthetic records only; never production validation.
+
+If a live operation fails, stop schedules, inspect source health and redacted alerts, preserve checkpoints, and rerun only the affected bounded operation after fixing the cause. No recovery path purchases credits, changes accounts, weakens TLS/RLS or resets trials.

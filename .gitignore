@@ -10,3 +10,11 @@ __pycache__/
 *.py[cod]
 .DS_Store
 Thumbs.db
+.local/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+dist/
+build/
+configs/models.catalog.json

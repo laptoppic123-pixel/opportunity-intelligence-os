@@ -1,0 +1,8 @@
+industries: [accounting, logistics, healthcare administration, professional services, education]
+buyers: [owner, operations manager, finance manager, independent consultant]
+workflows: [data reconciliation, client onboarding, reporting, tool integration]
+geographies: [global English, Pakistan English, underserved local language]
+languages: [English, Urdu, Spanish]
+physical_enabled: false
+allocation: {promising: 0.60, fresh: 0.25, counterevidence: 0.15}
+weights: {severity: 20, spending: 20, recurrence: 15, underserved_gap: 15, distribution: 15, feasibility: 10, momentum: 5}

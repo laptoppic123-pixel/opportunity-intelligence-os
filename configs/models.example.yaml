@@ -1,0 +1,11 @@
+# No invented model IDs or prices. Refresh the authorized provider catalog after activation.
+FAST_MODEL: null
+DEEP_MODEL: null
+CRITIC_MODEL: null
+HAIMAKER_FAST_MODEL: null
+HAIMAKER_DEEP_MODEL: null
+HAIMAKER_CRITIC_MODEL: null
+catalog_max_age_hours: 24
+max_input_characters: 12000
+max_output_tokens: 1800
+free_only: true
