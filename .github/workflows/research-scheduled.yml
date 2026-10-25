@@ -1,0 +1,61 @@
+name: Opportunity OS opt-in schedules
+'on':
+  schedule:
+  - cron: 17 1,7,13,19 * * *
+  - cron: 41 3 * * *
+  - cron: 53 4 * * 0
+permissions:
+  contents: read
+concurrency:
+  group: opportunity-os-global-worker
+  cancel-in-progress: false
+jobs:
+  research:
+    if: ${{ vars.OI_SCHEDULES_ENABLED == 'true' && vars.OI_ACTIVATED == 'true' && vars.OI_LIVE_ENABLED == 'true'
+      }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      OI_ACTIVATED: ${{ vars.OI_ACTIVATED || 'false' }}
+      OI_LIVE_ENABLED: ${{ vars.OI_LIVE_ENABLED || 'false' }}
+      OI_PAID_ENABLED: 'false'
+      OI_MONTHLY_LIMIT_USD: ${{ vars.OI_MONTHLY_LIMIT_USD || '20' }}
+      OI_INTERNAL_PAID_STOP_USD: ${{ vars.OI_INTERNAL_PAID_STOP_USD || '19' }}
+      OI_OWNER_ID: ${{ vars.OI_OWNER_ID }}
+      FAST_MODEL: ${{ vars.FAST_MODEL }}
+      DEEP_MODEL: ${{ vars.DEEP_MODEL }}
+      CRITIC_MODEL: ${{ vars.CRITIC_MODEL }}
+      FALLBACK_MODEL: ${{ vars.FALLBACK_MODEL }}
+      HAIMAKER_FAST_MODEL: ${{ vars.HAIMAKER_FAST_MODEL }}
+      HAIMAKER_DEEP_MODEL: ${{ vars.HAIMAKER_DEEP_MODEL }}
+      HAIMAKER_CRITIC_MODEL: ${{ vars.HAIMAKER_CRITIC_MODEL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      HAIMAKER_API_KEY: ${{ secrets.HAIMAKER_API_KEY }}
+      EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
+      TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+      SOURCE_GITHUB_TOKEN: ${{ secrets.SOURCE_GITHUB_TOKEN }}
+      STACKEXCHANGE_KEY: ${{ secrets.STACKEXCHANGE_KEY }}
+      SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
+      YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+      OPENALEX_API_KEY: ${{ secrets.OPENALEX_API_KEY }}
+      PROCUREMENT_API_KEY: ${{ secrets.PROCUREMENT_API_KEY }}
+      OI_BACKUP_ENCRYPTION_KEY: ${{ secrets.OI_BACKUP_ENCRYPTION_KEY }}
+      OI_MAX_REQUESTS: '10'
+      OI_MAX_SECONDS: '180'
+      OI_MAX_DOCUMENTS: '30'
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - name: Install locked Python 3.12 application
+      run: 'python3 -m pip install uv==0.9.8 --disable-pip-version-check
+
+        uv sync --locked --no-dev'
+    - name: Select bounded scheduled task
+      env:
+        SCHEDULE: ${{ github.event.schedule }}
+      run: "case \"$SCHEDULE\" in\n  '17 1,7,13,19 * * *') uv run --no-sync oi --live discover ;;\n  '41 3 * * *')\
+        \ uv run --no-sync oi --live analyze ;;\n  '53 4 * * 0') uv run --no-sync oi --live report && uv run --no-sync\
+        \ oi --live backup --upload ;;\n  *) echo \"Unknown schedule; no task started\"; exit 1 ;;\nesac\n"

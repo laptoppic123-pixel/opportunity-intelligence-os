@@ -58,7 +58,9 @@ def test_scheduled_template_has_only_the_approved_cadence():
         "53 4 * * 0",
     ]
     assert template["jobs"]["research"]["env"]["OI_PAID_ENABLED"] == "false"
-    assert not (root / ".github/workflows/research-scheduled.yml").exists()
+    active = root / ".github/workflows/research-scheduled.yml"
+    if active.exists():
+        assert yaml.safe_load(active.read_text(encoding="utf-8")) == template
 
 
 def test_request_is_one_opportunity_and_only_relevant_short_records(store, monkeypatch):
