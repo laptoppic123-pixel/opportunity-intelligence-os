@@ -18,7 +18,7 @@ The selected architecture is **run a job, save its durable results, then stop**.
 1. Confirm remaining included GitHub Actions capacity and spending controls at https://github.com/settings/billing/usage. The account's balance has not been verified by Codex; the workflow's confirmation checkbox is a manual gate, not an automatic billing check.
 2. Open https://github.com/laptoppic123-pixel/opportunity-intelligence-os/actions/workflows/n8n-batch.yml.
 3. Choose **Run workflow**, branch **main**, mode **runtime-check**, leave the workflow name empty, and confirm included allowance only after checking it.
-4. The job should report PASS and stop. The check requires no API keys. It consumes runner minutes and downloads the pinned public n8n image. No cloud run was dispatched during setup.
+4. The job should report PASS and stop. The check requires no API keys. It consumes runner minutes and downloads the pinned public n8n image. The first cloud run has already succeeded; repeating it is unnecessary unless the runtime configuration changes.
 
 If the allowance confirmation is false, GitHub skips the batch job before allocating its runner. This gate applies to this batch workflow; the separate Phase 0 Supabase check is also manual and must only be dispatched after capacity is checked.
 
@@ -34,9 +34,9 @@ GitHub Actions jobs do not supply a continuously available n8n editor or MCP con
 
 ## Verification and limits
 
-Setup verification covers the pinned registry manifest, local harness validation and failure cleanup, committed file contents, GitHub workflow registration, and absence of automatic triggers. Actual container execution is pending: local Docker is stopped and cloud execution is held until included allowance is confirmed. No paid service or AI provider was invoked.
+Setup verification covers the pinned registry manifest, local harness validation and failure cleanup, committed file contents, GitHub workflow registration, and absence of automatic triggers. After the owner confirmed available included runner capacity, the first cloud runtime check succeeded: https://github.com/laptoppic123-pixel/opportunity-intelligence-os/actions/runs/40189280773. Its single Ubuntu job ran for about 65 seconds, with checkout, n8n CLI checks, and cleanup reporting success. No retry was needed. No business workflow, Supabase request, or AI provider was invoked.
 
-Five local boundary tests passed: unknown workflows never invoke Docker; a missing allowance confirmation blocks cloud execution; a non-main branch blocks cloud execution; a timed-out run attempts cleanup of only its own container; and the runtime-check command has no container network, host storage mount, or exposed ports. Docker was mocked for these tests, so they do not establish that the image has executed successfully.
+Five local boundary tests passed: unknown workflows never invoke Docker; a missing allowance confirmation blocks cloud execution; a non-main branch blocks cloud execution; a timed-out run attempts cleanup of only its own container; and the runtime-check command has no container network, host storage mount, or exposed ports. Docker was mocked for those tests; the separate successful GitHub run establishes actual runtime execution. Importing and executing an agent workflow remains a later-phase test.
 
 References:
 

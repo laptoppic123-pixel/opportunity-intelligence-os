@@ -2,14 +2,14 @@
 
 Phase 0 connection preparation only. The agent, data pipeline, dashboard, and schedules have not been built.
 
-The selected n8n execution model is now configured: [GitHub Actions batch jobs](docs/n8n-batch.md) start a temporary n8n CLI container, run a task, and stop. The runtime check is available manually; the approved agent-workflow list is empty until the next phase. Cloud execution has not been tested or dispatched because the included allowance still needs verification.
+The selected n8n execution model is configured and its cloud runtime check has passed: [GitHub Actions batch jobs](docs/n8n-batch.md) start a temporary n8n CLI container, run a task, and stop. The approved agent-workflow list is empty until the next phase. After the account owner confirmed available included minutes, one runtime-check job succeeded in about 65 seconds: https://github.com/laptoppic123-pixel/opportunity-intelligence-os/actions/runs/40189280773. No business workflow or database integration ran.
 
 ## Platform destinations
 
 | Platform | Destination | Verified status |
 | --- | --- | --- |
 | GitHub | `laptoppic123-pixel/opportunity-intelligence-os` (private) | Created; authenticated CLI has admin and write access |
-| GitHub Actions | Enabled; default workflow token is read-only | Execution held pending free-allowance verification |
+| GitHub Actions | Enabled; default workflow token is read-only | One n8n runtime check passed after the owner confirmed included capacity |
 | Supabase organization | `Ai agent` (`jmdhivmkjvukuvduojeg`) | Free plan; MCP access verified |
 | Supabase project | `opportunity-intelligence-os` (`vaxesikpcgrdxzqikyur`) | Created; ACTIVE_HEALTHY; read-only SQL passed |
 | Supabase region | `ap-south-1` | Verified |
@@ -21,7 +21,7 @@ The project was created under the approved Ai agent connection after a quote of 
 
 ## Connection setup remaining
 
-1. Verify the account's remaining included runner allowance and spending controls before dispatching a run. The billing endpoint requires the additional `user` OAuth scope, which was not requested. Alternatively, the account owner can verify the allowance directly in GitHub Billing.
+1. Check the account's remaining included runner allowance and spending controls before future runs. The owner confirmed available included minutes for the first successful runtime check. The billing endpoint requires the additional `user` OAuth scope, which was not requested, so the exact account balance is not available to Codex.
 2. Add the Phase 0 repository secrets listed in `docs/secrets.md` directly in GitHub's secret settings. The Supabase publishable-key lookup did not return during preparation; no credential values were retrieved or installed.
 3. Dispatch the connection check only after the included allowance is verified. Record its result before calling GitHub-to-Supabase connectivity verified.
 
